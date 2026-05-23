@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>抖音风格·MCN专业看板 | 荣耀榜前十·动态营收</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #000;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      position: fixed;
+    }
+
+    .video-fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 1;
+    }
+
+    #hlsVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .ui-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .ui-overlay>* {
+      pointer-events: auto;
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
+      backdrop-filter: blur(8px);
+      z-index: 25;
+    }
+
+    .anchor-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .anchor-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ffc107;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+      background: #1e1e26;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    .anchor-avatar:active {
+      transform: scale(0.96);
+    }
+
+    .live-badge {
+      background: #ff2d55;
+      padding: 5px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: white;
+    }
+
+    .live-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+
+    .stream-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .viewer-count {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+    }
+
+    .data-btn {
+      background: rgba(108, 92, 231, 0.9);
+      border: none;
+      color: white;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .data-btn:active {
+      transform: scale(0.96);
+      background: #5a4ad1;
+    }
+
+    .chat-overlay {
+      position: absolute;
+      bottom: 85px;
+      left: 12px;
+      width: 340px;
+      max-width: 85vw;
+      height: 25vh;
+      background: transparent;
+      backdrop-filter: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 30;
+      pointer-events: none;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 1) 15%);
+      mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 1) 15%);
+    }
+
+    .chat-header {
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.5);
+      background: transparent;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    }
+
+    .chat-messages-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .comment-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      animation: fadeInUp 0.15s ease-out;
+      width: fit-content;
+    }
+
+    .comment-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #3a3a4a;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      display: block;
+    }
+
+    .comment-content {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      padding: 4px 10px;
+      border-radius: 12px;
+      line-height: 1.4;
+      font-size: 14px;
+      color: #ffffff;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.8);
+      word-break: break-word;
+    }
+
+    .comment-name {
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      margin-right: 6px;
+      font-size: 13px;
+    }
+
+    .comment-item-system .comment-content {
+      background: rgba(254, 44, 85, 0.35);
+      border: 0.5px solid rgba(254, 44, 85, 0.4);
+    }
+
+    .comment-item-system .comment-name {
+      color: #fffc50 !important;
+    }
+
+    .comment-item-gift .comment-content {
+      background: rgba(255, 193, 7, 0.35);
+      border: 0.5px solid rgba(255, 193, 7, 0.5);
+    }
+
+    .comment-item-gift .comment-text {
+      color: #ffeb3b;
+      font-weight: bold;
+    }
+
+    .comment-text {
+      color: #ffffff;
+      font-weight: 400;
+    }
+
+    .chat-messages-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bottom-input-area {
+      position: absolute;
+      bottom: 20px;
+      left: 12px;
+      right: 12px;
+      background: rgba(28, 28, 35, 0.7);
+      backdrop-filter: blur(15px);
+      border-radius: 40px;
+      padding: 4px 12px 4px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 35;
+      border: 0.5px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .bottom-input-area input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      padding: 10px 14px;
+      border-radius: 40px;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .bottom-input-area input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 13px;
+    }
+
+    .bottom-input-area button {
+      background: #fe2c55;
+      border: none;
+      color: white;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .bottom-input-area button:active {
+      transform: scale(0.96);
+      background: #e0254c;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mcn-panel {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 88%;
+      max-width: 420px;
+      height: 100%;
+      background: #14141a;
+      z-index: 110;
+      padding: 20px 16px;
+      overflow-y: auto;
+      transition: right 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      border-left: 1px solid #2a2a38;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .mcn-panel.open {
+      right: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #2a2a38;
+    }
+
+    .panel-header h2 {
+      font-size: 16px;
+      color: white;
+    }
+
+    .close-panel {
+      background: #1e1e26;
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 30px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: #0a0a0f;
+      border-radius: 12px;
+      padding: 10px 4px;
+      text-align: center;
+      border: 1px solid #2a2a38;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #8b8b9c;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #e6e6ed;
+    }
+
+    .gold-value {
+      color: #ffc107;
+    }
+
+    .usd-value {
+      color: #00e5ff;
+    }
+
+    .pink-value {
+      color: #ff2d55;
+    }
+
+    .green-value {
+      color: #2ed573;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 16px 0 10px;
+      color: #ffffff;
+      border-left: 3px solid #6c5ce7;
+      padding-left: 8px;
+    }
+
+    .leaderboard-list {
+      background: #0a0a0f;
+      border-radius: 16px;
+      padding: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .giver-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1a1a22;
+      margin-bottom: 6px;
+      padding: 6px 10px;
+      border-radius: 10px;
+    }
+
+    .rank-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #2c2c3a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 11px;
+    }
+
+    .rank-1 {
+      background: #ffc107;
+      color: black;
+    }
+
+    .rank-2 {
+      background: #c0c0c0;
+      color: black;
+    }
+
+    .rank-3 {
+      background: #cd7f32;
+      color: black;
+    }
+
+    .avatar-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #2c2c3a;
+    }
+
+    .giver-name {
+      font-weight: 600;
+      font-size: 12px;
+      color: #eee;
+    }
+
+    .giver-coins {
+      font-size: 11px;
+      color: #ffc107;
+    }
+
+    .stream-table {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+    }
+
+    .stream-table td {
+      padding: 6px 4px;
+      border-bottom: 1px solid #222;
+      color: #ddd;
+    }
+
+    .tag-live {
+      border-radius: 30px;
+      padding: 2px 8px;
+      font-size: 10px;
+    }
+
+    .custom-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(20px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.2s;
+      pointer-events: none;
+    }
+
+    .custom-modal.show {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 90%;
+      max-width: 380px;
+      background: rgba(20, 20, 30, 0.96);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-card h3 {
+      color: white;
+      font-size: 18px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .modal-field {
+      margin-bottom: 12px;
+    }
+
+    .modal-field label {
+      display: block;
+      font-size: 11px;
+      color: #bbb;
+      margin-bottom: 4px;
+    }
+
+    .modal-field input {
+      width: 100%;
+      background: #1e1e2a;
+      border: 1px solid #3a3a48;
+      padding: 10px 14px;
+      border-radius: 20px;
+      color: white;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .row-2col {
+      display: flex;
+      gap: 10px;
+    }
+
+    .row-2col .modal-field {
+      flex: 1;
+    }
+
+    .play-stream-btn {
+      background: #2a2a38;
+      border: 1px solid #00e5ff;
+      color: #00e5ff;
+      width: 100%;
+      padding: 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+
+    .apply-modal-btn {
+      background: #6c5ce7;
+      border: none;
+      width: 100%;
+      padding: 10px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 6px;
+      cursor: pointer;
+    }
+
+    .close-modal-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      width: 100%;
+      padding: 8px;
+      border-radius: 20px;
+      color: #ccc;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+
+    .toast-message {
+      position: fixed;
+      bottom: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(12px);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-size: 13px;
+      z-index: 210;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+    }
+
+    .toast-animate {
+      animation: fadeOut 2s ease forwards;
+    }
+
+    @keyframes fadeOut {
+      0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      70% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chat-overlay {
+        width: 290px;
+        bottom: 80px;
+        left: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="video-fullscreen">
+    <video id="hlsVideo" autoplay playsinline webkit-playsinline></video>
+  </div>
+
+  <div class="ui-overlay">
+    <div class="top-bar">
+      <div class="anchor-info">
+        <img class="anchor-avatar" id="anchorAvatar" src="https://i.pravatar.cc/150?img=32" alt="主播头像">
+        <div class="stream-title" id="streamTitle">✨小可儿·巅峰之夜✨</div>
+        <div class="live-badge">LIVE</div>
+      </div>
+      <div class="right-actions">
+        <span class="viewer-count">👥 <span id="onlineCount">1,248</span></span>
+        <img src="imge/shuju.png" id="openDataBtn" alt="数据看板" style="height: 24px;width: 24px; cursor: pointer;"
+          onerror="this.style.display='none';">
+      </div>
+    </div>
+
+    <div class="chat-overlay">
+      <div class="chat-messages-list" id="chatMessagesList"></div>
+    </div>
+
+    <div class="bottom-input-area">
+      <input type="text" id="chatInput" placeholder="发条弹幕加入互动..." maxlength="45">
+      <button id="sendCommentBtn">发送</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="panelOverlay"></div>
+  <div class="mcn-panel" id="mcnPanel">
+    <div class="panel-header">
+      <h2>📊 营收留存板</h2>
+      <button class="close-panel" id="closePanelBtn">✕</button>
+    </div>
+
+    <div class="section-title">💰 核心营收指标</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">累计送礼</div>
+        <div class="stat-value gold-value" id="statCoins">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">本场营收</div>
+        <div class="stat-value usd-value" id="statUsd">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">打赏付费率</div>
+        <div class="stat-value pink-value" id="statPayRate">4.2%</div>
+      </div>
+    </div>
+
+    <div class="section-title">📈 粉丝与流量留存</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">当前在线</div>
+        <div class="stat-value" id="statCurrent">1,248</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">巅峰同在</div>
+        <div class="stat-value" id="statPeak">1,892</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">累计场观</div>
+        <div class="stat-value" id="statTotal">5,621</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">人均停留</div>
+        <div class="stat-value green-value" id="statStayTime">2m 45s</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">本场新增关注</div>
+        <div class="stat-value green-value" id="statNewFollows">+382</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">公屏互动率</div>
+        <div class="stat-value" id="statChatRate">12.8%</div>
+      </div>
+    </div>
+
+    <div class="section-title">⏱️ 开播状态</div>
+    <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="stat-card">
+        <div class="stat-label">直播时长</div>
+        <div class="stat-value" id="statDuration">00:00:00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">打赏破冰人数</div>
+        <div class="stat-value pink-value" id="statIceBreak">0 人</div>
+      </div>
+    </div>
+
+    <div class="section-title">🏆 荣耀榜</div>
+    <div class="leaderboard-list" id="leaderboardList"></div>
+
+    <div class="section-title">📡 网络流状态</div>
+    <table class="stream-table">
+      <tr>
+        <td>流码率</td>
+        <td id="tbBitrate">6,200 kbps</td>
+        <td class="tag-live">稳定</td>
+      </tr>
+      <tr>
+        <td>帧率</td>
+        <td id="tbFps">60 fps</td>
+        <td class="tag-live">流畅</td>
+      </tr>
+      <tr>
+        <td>延迟延时</td>
+        <td id="tbLatency">1.6s</td>
+        <td class="tag-live">极低延迟</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="custom-modal" id="dataModal">
+    <div class="modal-card">
+      <h3>🎛️ 主播后台 · 核心数据同步</h3>
+      <div class="modal-field"><label>🎤 主播标题/昵称</label><input type="text" id="modalStreamerTitle"
+          placeholder="例如：✨小可儿·巅峰之夜✨" maxlength="48"></div>
+      <div class="modal-field"><label>👤 头像链接</label><input type="text" id="modalAvatarUrl"
+          value="https://i.pravatar.cc/150?img=32"></div>
+      <div class="modal-field"><label>📊 当前在线人数</label><input type="number" id="modalCurrent"></div>
+      <div class="row-2col">
+        <div class="modal-field"><label>📈 累计场观</label><input type="number" id="modalTotalViews"></div>
+        <div class="modal-field"><label>🔥 巅峰在线</label><input type="number" id="modalPeak"></div>
+      </div>
+      <div class="row-2col">
+        <div class="modal-field"><label>⏱️ 人均停留(分钟)</label><input type="number" step="0.1" id="modalStayMin"></div>
+        <div class="modal-field"><label>➕ 新增关注</label><input type="number" id="modalNewFollows"></div>
+      </div>
+      <div class="modal-field"><label>💬 公屏互动率(%)</label><input type="number" step="0.1" id="modalChatRate"></div>
+      <div class="modal-field"><label>⏱️ 直播时长(秒)</label><input type="number" id="modalDuration"></div>
+      <div class="modal-field"><label>📡 M3U8 直播源地址</label><input type="text" id="modalM3u8Url"
+          placeholder="https://.../index.m3u8"></div>
+      <button class="play-stream-btn" id="playStreamBtn">▶ 保存地址并激活音视频流</button>
+      <button class="apply-modal-btn" id="applyModalBtn">确认同步更改</button>
+      <button class="close-modal-btn" id="closeModalBtn">取消</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const BASE_NAMES = [
+        'Scar', 'Abbott', 'Baird', 'Borislav', 'Charlie', 'Channing', 'Clare', 'Darren', 'Dante', 'Edmund',
+        'Earl', 'Gale', 'George', 'Heather', 'Hilary', 'Isidore', 'Jarek', '不虚此行', '江南烟雨', '孤灯',
+        '无欲之争', '无平凡的壳', '释然', '年少无畏不自卑', '此曲已终', '词俗', '舍得', '假面', '♪no matter',
+        '暴雨柴舟', '救世主', '入我襟怀', '煙驅菰獨', '夜太媚', '乖就抱抱妳', '忒爽i', 'ほもの', '一度です',
+        '悲しい心', 'やさしい', '古くなった人', 'うそ', '风のように', '别れ', '忘れて', '미러 월드', '별○l',
+        '때때로', '그래서 기념', '만남의 죽음', '风清扬', '独孤求败', '东坡肉', '小甜甜', '虎哥破军', '凌云志',
+        '夕瑶仙子', '怒风', '北城以北', '南巷清风', '深渊骑士', '暴躁学姐', '温柔似水', '江湖故人', '陈年老酒',
+        '南笙北执', '孤傲的狼', '绝世容颜', '富甲一方', '梦回当年', '仗剑天涯', '不朽传奇'
+      ];
+      const MOCK_NAMES = (() => {
+        if (BASE_NAMES.length >= 70) return BASE_NAMES.slice(0, 70);
+        let arr = [...BASE_NAMES];
+        for (let i = arr.length; i < 70; i++) arr.push(`荣耀者${i - 50}`);
+        return arr;
+      })();
+
+      const MOCK_CHATS = [
+        '今天好漂亮！', '妈妈', '小姐姐', '漂亮', '爱了爱了', '颜值天花板', '眼睛会说话', '声音好听', '嫁给我吧', '求私聊', '别走，再看一会儿', '这谁顶得住啊', '别理那些黑粉', '开美颜了吧',
+        '兄弟们冲啊', '求加微信', '做我女朋友吧', '我养你', '嫁给我吧', '但为了你我愿意把吃泡面的钱省下来送给你', '耳环不错', '我感觉我中了你的毒', '手指就不听使唤地点进来', '我会点赞~不白嫖',
+        '尊嘟假嘟', '背景太假了', 'DNA动了', '我恋爱了兄弟们', '今天真准时', '长在我的审美点上', '沦陷了', 'Good-looking girl', '你是单身吗', '大好きです！', '这种怎么追', '等我中彩票来找你',
+        '美是美了 但是却了我', 'どういたしまして', '素敵な服', 'わあ、とても美しい！', 'この女性は手に入れる価値がある。', '此女值得拥有', '你好 BOSS', '广东妹子', 'とても美しい', '军师们。我想得到她',
+        '你抽烟吗', 'タバコは吸​​いますか', '年轻真好', '少し上品', '说一下三围', '目に心地よい', 'pleasing to the eye', '好甜啊', ' beautiful', '我娶回家供着', '我又一见钟情', '耐看', '好美', '喜歡',
+        '又便宜那個小子了', '愛了 愛了', '好久不見', '宝宝可以加你微信吗?', 'Will you marry me?', '你会想我吗?', 'Chinese', 'Love at first sight', 'Im single', '너무 달콤해', '내 아기',
+        '我可以跟你谈一天、不能再多了', '你又在搞什么花样', '多大年纪', '저는 당신의 중고 옷을 원합니다', '你可以娶我吗', '勉强能入眼', '하루에 네 번이면 충분할 거예요.', '多高 媳妇', '美死了',
+        '要怎么你才能注意我', '老婆最近你瘦了', '你是AI', '姐姐 你好美', '우리 같이 게임할 수 있을까요?', '能一起玩吗', '什么价格', 'いくらまで予約できますか？', '老婆 我流鼻血了', '中国哪些的',
+        'Everyones talking about this nexlify', 'super', 'alhamdulilah', ' you are my love', 'super', 'Were beautiful', 'I am a fashion designer', 'wow', 'dreaamgirl', ' hi beauty',
+        'Love your jig ka lee s', 'why did my bf send me ts', 'hy where you from ', 'Marry them or like my comment', 'supercell id ?', 'if he see this im cooked..', 'NAH SUPRAS ARE THE BEST', 'girl name?',
+        '正点🥰', '🥰🥰🥰🥰', '😍😍', 'WOWWWWWW', '🤩🤩', '你命里缺少了我', '喜欢上了😍 咋办啊', '我要吃饺子喝汤', '好吧ˇ可以答应你追求我了', '谁在谈这样女孩', '我恨你 老婆', '看着流口水了', 'nice', '此女易孕', '怎么能娶你', '家妻献丑了~'
+        , '家妻卖艺…不要其他想法啊', '姐姐 我饿了', '我有三百万能娶你吗', '看着有点费钱啊', '😃😃 能一起玩吗', '😃😃😃', '👍', '👍👍👍', '🤗🤗', '❤️❤️❤️❤️❤️', '🌹', '🌹🌹', '🌹🌹🌹🌹', ' 我流鼻血了 👩👩', '👟👟', '🧢🧢🧢🧢', '💋', '💋💋💋',
+        'bravissimi 🥰💯❤️', 'Solo per guardare 👀 mi sono stancata 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣', '不能再看了 我的缓缓'
+      ];
+
+      function getAvatarNumber(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+          hash = ((hash << 5) - hash) + name.charCodeAt(i);
+          hash |= 0;
+        }
+        return (Math.abs(hash) % 70) + 1;
+      }
+
+      // 采用长尾/断层分布逻辑算法，拉开打赏榜单前10名的贫富差距
+      function generateRankedCoins() {
+        let rawList = MOCK_NAMES.map(name => ({ name, baseWeight: Math.random() }));
+        rawList.sort((a, b) => b.baseWeight - a.baseWeight);
+        return rawList.map((item, index) => {
+          let coins = 0;
+          if (index === 0) {
+            coins = Math.floor(Math.random() * 40000) + 500;
+          } else if (index === 1) {
+            coins = Math.floor(Math.random() * 28888) + 700;
+          } else if (index === 2) {
+            coins = Math.floor(Math.random() * 28888) + 500;
+          } else if (index < 10) {
+            let stepFactor = (10 - index) / 7;
+            coins = Math.floor((Math.random() * 14888 + 500) * stepFactor);
+          } else {
+            coins = Math.floor(Math.random() * 2990) + 10;
+          }
+          return { name: item.name, coins: coins };
+        });
+      }
+
+      // 主播标题管理
+      const STORAGE_TITLE_KEY = 'mcn_streamer_title';
+      let currentStreamerTitle = "✨小可儿·巅峰之夜✨";
+      const streamTitleEl = document.getElementById('streamTitle');
+
+      function updateStreamerTitleUI(newTitle) {
+        if (!newTitle || newTitle.trim() === "") newTitle = "✨主播的直播间✨";
+        currentStreamerTitle = newTitle;
+        if (streamTitleEl) streamTitleEl.innerText = currentStreamerTitle;
+        localStorage.setItem(STORAGE_TITLE_KEY, currentStreamerTitle);
+      }
+
+      function loadStoredTitle() {
+        const stored = localStorage.getItem(STORAGE_TITLE_KEY);
+        if (stored && stored.trim()) {
+          currentStreamerTitle = stored.trim();
+          if (streamTitleEl) streamTitleEl.innerText = currentStreamerTitle;
+        } else {
+          updateStreamerTitleUI(currentStreamerTitle);
+        }
+      }
+
+      // 荣耀榜数据
+      let currentAllGivers = [];
+      let currentTop10 = [];
+      let totalCoinsAll = 0;
+      let top10TotalCoins = 0;
+
+      function refreshLeaderboardAndRevenue() {
+        const newList = generateRankedCoins();
+        newList.sort((a, b) => b.coins - a.coins);
+        currentAllGivers = newList;
+        totalCoinsAll = currentAllGivers.reduce((sum, g) => sum + g.coins, 0);
+        const topSlice = currentAllGivers.slice(0, 10);
+        currentTop10 = topSlice;
+        top10TotalCoins = topSlice.reduce((sum, g) => sum + g.coins, 0);
+        if (window._mcnState) {
+          window._mcnState.totalGiftCoins = totalCoinsAll;
+          window._mcnState.top10RevenueCoins = top10TotalCoins;
+          window._mcnState.iceBreak = currentAllGivers.filter(g => g.coins > 0).length;
+        }
+        renderLeaderboardUI();
+        updateRevenueUI();
+      }
+
+      function renderLeaderboardUI() {
+        const container = document.getElementById('leaderboardList');
+        if (!container || !currentTop10.length) return;
+        container.innerHTML = currentTop10.map((giver, idx) => {
+          let rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+          const avatarNum = getAvatarNumber(giver.name);
+          const avatarLocalPath = `images/${avatarNum}.png`;
+          return `<div class="giver-item">
+                    <div class="rank-badge ${rankClass}">${idx + 1}</div>
+                    <img src="${avatarLocalPath}" class="avatar-sm" alt="头像" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(giver.name)}&background=6c5ce7&color=fff&size=64&bold=true'">
+                    <div>
+                      <div class="giver-name">${giver.name}</div>
+                      <div class="giver-coins">💎 ${giver.coins.toLocaleString()} 币 </div>
+                    </div>
+                  </div>`;
+        }).join('');
+      }
+
+      function updateRevenueUI() {
+        const totalCoinsElem = document.getElementById('statCoins');
+        const revenueUsdElem = document.getElementById('statUsd');
+        if (totalCoinsElem) totalCoinsElem.innerText = totalCoinsAll.toLocaleString();
+        if (revenueUsdElem) revenueUsdElem.innerText = `$${(top10TotalCoins / 100).toFixed(2)}`;
+      }
+
+      // ✅ 全局状态: iceBreak 初始随机 20~100 (按要求修改)
+      let globalState = {
+        current: 1248, peak: 1892, totalViews: 5621, stayMinutes: 2.75,
+        newFollows: 382, chatRate: 12.8, seconds: 7650, payRate: 4.25,
+        bitrate: 6000, fps: 60, latency: 1.8, totalGiftCoins: 0,
+        top10RevenueCoins: 0, iceBreak: Math.floor(Math.random() * 81) + 20
+      };
+      window._mcnState = globalState;
+
+      function fmtDuration(sec) {
+        let h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }
+
+      function updateAllUI() {
+        document.getElementById('onlineCount').innerText = globalState.current.toLocaleString();
+        document.getElementById('statCurrent').innerText = globalState.current.toLocaleString();
+        document.getElementById('statPeak').innerText = globalState.peak.toLocaleString();
+        document.getElementById('statTotal').innerText = globalState.totalViews.toLocaleString();
+        document.getElementById('statCoins').innerText = globalState.totalGiftCoins.toLocaleString();
+        document.getElementById('statUsd').innerText = `$${(globalState.top10RevenueCoins / 100).toFixed(2)}`;
+        document.getElementById('statDuration').innerText = fmtDuration(globalState.seconds);
+        document.getElementById('statPayRate').innerText = `${globalState.payRate.toFixed(2)}%`;
+        const mins = Math.floor(globalState.stayMinutes);
+        const secs = Math.floor((globalState.stayMinutes % 1) * 60);
+        document.getElementById('statStayTime').innerText = `${mins}m ${secs}s`;
+        document.getElementById('statNewFollows').innerText = `+${globalState.newFollows}`;
+        document.getElementById('statChatRate').innerText = `${globalState.chatRate.toFixed(1)}%`;
+        document.getElementById('tbBitrate').innerText = `${globalState.bitrate.toLocaleString()} kbps`;
+        document.getElementById('tbFps').innerText = `${globalState.fps} fps`;
+        document.getElementById('tbLatency').innerText = `${globalState.latency}s`;
+      }
+
+
+
+
+
+      setInterval(() => {
+        let delta = Math.floor(Math.random() * 31) - 10;
+        let newCurrent = globalState.current + delta;
+        if (newCurrent < 580) newCurrent = 620;
+        globalState.current = newCurrent;
+        if (globalState.current > globalState.peak) globalState.peak = globalState.current;
+        if (Math.random() > 0.65) globalState.totalViews += Math.floor(Math.random() * 12) + 3;
+        if (Math.random() > 0.7) globalState.newFollows += 1;
+        globalState.stayMinutes = Math.min(6.5, Math.max(1.6, globalState.stayMinutes + (Math.random() * 0.04 - 0.02)));
+        globalState.chatRate = Math.min(22, Math.max(7.5, globalState.chatRate + (Math.random() * 0.2 - 0.1)));
+        globalState.payRate = Math.min(9.5, Math.max(3.2, globalState.payRate + (Math.random() * 0.08 - 0.04)));
+        globalState.seconds++;
+        globalState.bitrate = 5400 + Math.floor(Math.random() * 800);
+        globalState.latency = +(1.3 + Math.random() * 0.9).toFixed(1);
+        updateAllUI();
+      }, 1200);
+
+      setInterval(() => {
+        refreshLeaderboardAndRevenue();
+        updateAllUI();
+      }, 15000);
+
+      // 评论系统
+      function createAvatarElement(userName) {
+        const avatarNum = getAvatarNumber(userName);
+        const img = document.createElement('img');
+        img.className = 'comment-avatar';
+        img.src = `images/${avatarNum}.png`;
+        img.alt = userName.charAt(0);
+        img.onerror = function () {
+          if (img.getAttribute('data-fallback')) return;
+          img.setAttribute('data-fallback', 'true');
+          const fallbackDiv = document.createElement('div');
+          fallbackDiv.className = 'comment-avatar';
+          fallbackDiv.style.background = `linear-gradient(135deg, #6c5ce7, #4a3a9e)`;
+          fallbackDiv.style.display = 'flex';
+          fallbackDiv.style.alignItems = 'center';
+          fallbackDiv.style.justifyContent = 'center';
+          fallbackDiv.style.color = 'white';
+          fallbackDiv.style.fontSize = '12px';
+          fallbackDiv.style.fontWeight = 'bold';
+          fallbackDiv.innerText = userName.charAt(0).toUpperCase();
+          img.parentNode?.replaceChild(fallbackDiv, img);
+        };
+        return img;
+      }
+      function addComment(userName, message, isSystem = false) {
+        const container = document.getElementById('chatMessagesList');
+        if (!container) return;
+        const commentDiv = document.createElement('div');
+        const isGift = message.includes('礼物') || message.includes('🚀') || message.includes('💎');
+        if (isGift) commentDiv.className = 'comment-item comment-item-gift';
+        else if (isSystem) commentDiv.className = 'comment-item comment-item-system';
+        else commentDiv.className = 'comment-item';
+        const displayName = isSystem ? '系统' : userName;
+        const avatarEl = createAvatarElement(displayName);
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'comment-content';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'comment-name';
+        nameSpan.innerText = displayName;
+        const textSpan = document.createElement('span');
+        textSpan.className = 'comment-text';
+        textSpan.innerText = isSystem ? ` ${message}` : ` ：${message}`;
+        contentDiv.appendChild(nameSpan); contentDiv.appendChild(textSpan);
+        commentDiv.appendChild(avatarEl); commentDiv.appendChild(contentDiv);
+        container.appendChild(commentDiv);
+        container.scrollTop = container.scrollHeight;
+        while (container.children.length > 50) container.removeChild(container.firstChild);
+      }
+      setInterval(() => {
+        if (MOCK_NAMES.length) {
+          const randName = MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)];
+          const randMsg = MOCK_CHATS[Math.floor(Math.random() * MOCK_CHATS.length)];
+          addComment(randName, randMsg);
+        }
+      }, 2800);
+      document.getElementById('sendCommentBtn').addEventListener('click', () => {
+        const txt = document.getElementById('chatInput').value.trim();
+        if (txt) { addComment('·观众我', txt); document.getElementById('chatInput').value = ''; }
+      });
+      document.getElementById('chatInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('sendCommentBtn').click(); });
+
+      document.getElementById('openDataBtn').addEventListener('click', () => {
+        document.getElementById('mcnPanel').classList.add('open');
+        document.getElementById('panelOverlay').classList.add('show');
+      });
+      document.getElementById('closePanelBtn').addEventListener('click', () => {
+        document.getElementById('mcnPanel').classList.remove('open');
+        document.getElementById('panelOverlay').classList.remove('show');
+      });
+      document.getElementById('panelOverlay').addEventListener('click', () => {
+        document.getElementById('mcnPanel').classList.remove('open');
+        document.getElementById('panelOverlay').classList.remove('show');
+      });
+
+      const modal = document.getElementById('dataModal');
+      const modalTitleInput = document.getElementById('modalStreamerTitle');
+      const modalAvatar = document.getElementById('modalAvatarUrl');
+      const modalCurrent = document.getElementById('modalCurrent');
+      const modalTotalViews = document.getElementById('modalTotalViews');
+      const modalPeak = document.getElementById('modalPeak');
+      const modalStayMin = document.getElementById('modalStayMin');
+      const modalNewFollows = document.getElementById('modalNewFollows');
+      const modalChatRate = document.getElementById('modalChatRate');
+      const modalDuration = document.getElementById('modalDuration');
+      const modalM3u8 = document.getElementById('modalM3u8Url');
+      const anchorImg = document.getElementById('anchorAvatar');
+
+      function openModalFill() {
+        modalTitleInput.value = currentStreamerTitle;
+        modalAvatar.value = anchorImg.src;
+        modalCurrent.value = globalState.current;
+        modalTotalViews.value = globalState.totalViews;
+        modalPeak.value = globalState.peak;
+        modalStayMin.value = globalState.stayMinutes;
+        modalNewFollows.value = globalState.newFollows;
+        modalChatRate.value = globalState.chatRate;
+        modalDuration.value = globalState.seconds;
+        modalM3u8.value = currentM3U8;
+        modal.classList.add('show');
+      }
+
+      function applySync() {
+        let newTitle = modalTitleInput.value.trim();
+        if (newTitle) updateStreamerTitleUI(newTitle);
+        else showToast('⚠️ 标题不能为空，保持原样', 1500);
+        if (modalAvatar.value.trim()) anchorImg.src = modalAvatar.value.trim();
+        if (modalCurrent.valueAsNumber >= 0) globalState.current = modalCurrent.valueAsNumber;
+        if (modalTotalViews.valueAsNumber >= 0) globalState.totalViews = modalTotalViews.valueAsNumber;
+        if (modalPeak.valueAsNumber >= 0) globalState.peak = modalPeak.valueAsNumber;
+        if (modalStayMin.valueAsNumber > 0) globalState.stayMinutes = modalStayMin.valueAsNumber;
+        if (modalNewFollows.valueAsNumber >= 0) globalState.newFollows = modalNewFollows.valueAsNumber;
+        if (modalChatRate.valueAsNumber >= 0) globalState.chatRate = modalChatRate.valueAsNumber;
+        if (modalDuration.valueAsNumber >= 0) globalState.seconds = modalDuration.valueAsNumber;
+        const m3u8val = modalM3u8.value.trim();
+        if (m3u8val) { saveM3U8(m3u8val); loadM3U8(m3u8val, false); }
+        updateAllUI();
+        modal.classList.remove('show');
+        showToast('✅ 后台数据已同步，主播标题已更新');
+      }
+
+      anchorImg.addEventListener('click', openModalFill);
+      document.getElementById('applyModalBtn').addEventListener('click', applySync);
+      document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.remove('show'));
+
+      const videoEl = document.getElementById('hlsVideo');
+      let hls = null;
+      let currentM3U8 = '';
+      const STORAGE_KEY = 'mcn_stream_m3u8_url';
+      function saveM3U8(url) { if (url) localStorage.setItem(STORAGE_KEY, url.trim()); }
+      function getStored() { return localStorage.getItem(STORAGE_KEY); }
+      function loadM3U8(url, startMuted = true) {
+        if (!url) return;
+        if (hls) { hls.destroy(); hls = null; }
+        videoEl.muted = startMuted;
+        if (Hls.isSupported()) {
+          hls = new Hls({ capLevelToPlayerSize: true });
+          hls.loadSource(url);
+          hls.attachMedia(videoEl);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => { videoEl.play().catch(e => console.log); });
+        } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+          videoEl.src = url;
+          videoEl.play().catch(e => console.log);
+        }
+        currentM3U8 = url;
+      }
+      document.getElementById('playStreamBtn').addEventListener('click', () => {
+        const newUrl = modalM3u8.value.trim();
+        if (newUrl) {
+          saveM3U8(newUrl);
+          loadM3U8(newUrl, false);
+          videoEl.muted = false;
+          modal.classList.remove('show');
+          showToast('🎬 直播音频流地址已切换（已激活声音）');
+        } else showToast('❌ 请输入有效地址');
+      });
+      window.addEventListener('click', () => {
+        if (videoEl && videoEl.muted) {
+          videoEl.muted = false;
+          videoEl.play().catch(e => console.log);
+        }
+      }, { once: true });
+      function initStream() {
+        const stored = getStored();
+        if (stored && stored.trim()) loadM3U8(stored, true);
+        else loadM3U8('https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8', true);
+      }
+      function showToast(msg, dur = 1800) {
+        let toast = document.createElement('div');
+        toast.className = 'toast-message toast-animate';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), dur);
+      }
+
+      loadStoredTitle();
+      refreshLeaderboardAndRevenue();
+      updateAllUI();
+      initStream();
+      shshbd()
+    })();
+
+  </script>
+<script>
+  // 破冰人数：刷新页面时随机一次（20~100），之后永不改变
+  (function() {
+      // 等待全局状态对象存在后，设置随机值（防止被覆盖时重新设置）
+      const setIceBreakOnce = () => {
+          if (window._mcnState && !window._iceBreakInited) {
+              // 随机 20~100
+              window._mcnState.iceBreak = Math.floor(Math.random() * 81) + 20;
+              // 同步显示
+              const el = document.getElementById('statIceBreak');
+              if (el) el.innerText = `${window._mcnState.iceBreak} 人`;
+              window._iceBreakInited = true;
+          } else {
+              // 如果全局状态还没准备好，稍等再试
+              setTimeout(setIceBreakOnce, 50);
+          }
+      };
+      setIceBreakOnce();
+  })();
+</script>
+</body>
+
+</html>
