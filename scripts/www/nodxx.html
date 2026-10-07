@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>抖音风格·MCN专业看板 | 荣耀榜前十·动态营收+礼物系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js">
+    </script>
+    <style>
+        /* ===== 全局重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #000;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            position: fixed;
+        }
+
+        /* ===== 视频层 ===== */
+        .video-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1;
+        }
+
+        #hlsVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        /* ===== UI 覆盖层 ===== */
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .ui-overlay>* {
+            pointer-events: auto;
+        }
+
+        /* ===== 顶部栏 ===== */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
+            backdrop-filter: blur(8px);
+            z-index: 25;
+        }
+
+        .anchor-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .anchor-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ffc107;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+            background: #1e1e26;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .anchor-avatar:active {
+            transform: scale(0.96);
+        }
+
+        .live-badge {
+            background: #ff2d55;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: white;
+        }
+
+        .live-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+
+        .stream-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .right-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .viewer-count {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .data-btn {
+            background: rgba(108, 92, 231, 0.9);
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .data-btn:active {
+            transform: scale(0.96);
+            background: #5a4ad1;
+        }
+
+        /* ===== 聊天区域 ===== */
+        .chat-overlay {
+            position: absolute;
+            bottom: 85px;
+            left: 12px;
+            width: 340px;
+            max-width: 85vw;
+            height: 25vh;
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 30;
+            pointer-events: none;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 1) 15%);
+            mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 1) 15%);
+        }
+
+        .chat-messages-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        .chat-messages-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 单条评论 */
+        .comment-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            animation: fadeInUp 0.15s ease-out;
+            width: fit-content;
+        }
+
+        .comment-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #3a3a4a;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            display: block;
+        }
+
+        .comment-content {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            padding: 4px 10px;
+            border-radius: 12px;
+            line-height: 1.4;
+            font-size: 14px;
+            color: #ffffff;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.8);
+            word-break: break-word;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .comment-name {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            margin-right: 6px;
+            font-size: 13px;
+        }
+
+        .comment-text {
+            color: #ffffff;
+            font-weight: 400;
+        }
+
+        /* 礼物类评论（保留金色背景，但不显示图片） */
+        .comment-item-gift .comment-content {
+            background: rgba(255, 193, 7, 0.35);
+            border: 0.5px solid rgba(255, 193, 7, 0.5);
+        }
+
+        .comment-item-gift .comment-text {
+            color: #ffeb3b;
+            font-weight: bold;
+        }
+
+        /* ===== 底部输入 ===== */
+        .bottom-input-area {
+            position: absolute;
+            bottom: 20px;
+            left: 12px;
+            right: 12px;
+            background: rgba(28, 28, 35, 0.7);
+            backdrop-filter: blur(15px);
+            border-radius: 40px;
+            padding: 4px 12px 4px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 35;
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bottom-input-area input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            padding: 10px 14px;
+            border-radius: 40px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .bottom-input-area input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .bottom-input-area button {
+            background: #fe2c55;
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .bottom-input-area button:active {
+            transform: scale(0.96);
+            background: #e0254c;
+        }
+
+        /* ===== 遮罩 & 侧栏 ===== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 营收留存版 → 银白色背景 + 黑色文字 */
+        .mcn-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 88%;
+            max-width: 420px;
+            height: 100%;
+            background: #f0f2f5;
+            z-index: 110;
+            padding: 20px 16px;
+            overflow-y: auto;
+            transition: right 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border-left: 1px solid #dce0e5;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            color: #1a1a2e;
+        }
+
+        .mcn-panel.open {
+            right: 0;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dce0e5;
+        }
+
+        .panel-header h2 {
+            font-size: 16px;
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+
+        .close-panel {
+            background: #e8ecf0;
+            border: none;
+            color: #1a1a2e;
+            width: 32px;
+            height: 32px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .close-panel:hover {
+            background: #d5d9e0;
+        }
+
+        .close-panel:active {
+            transform: scale(0.94);
+        }
+
+        /* ===== 统计卡片 ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 10px 4px;
+            text-align: center;
+            border: 1px solid #dce0e5;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #5a5a6e;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .gold-value {
+            color: #ffc107;
+        }
+
+        .usd-value {
+            color: #1a1a2e;
+        }
+
+        .pink-value {
+            color: #1a1a2e;
+        }
+
+        .green-value {
+            color: #1a1a2e;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 16px 0 10px;
+            color: #1a1a2e;
+            border-left: 3px solid #6c5ce7;
+            padding-left: 8px;
+        }
+
+        /* ===== 荣耀榜 ===== */
+        .leaderboard-list {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid #e8ecf0;
+        }
+
+        .giver-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f5f7fa;
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #eef0f4;
+        }
+
+        .rank-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #dce0e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+            color: #1a1a2e;
+        }
+
+        .rank-1 {
+            background: #ffc107;
+            color: #1a1a2e;
+        }
+
+        .rank-2 {
+            background: #c0c0c0;
+            color: #1a1a2e;
+        }
+
+        .rank-3 {
+            background: #cd7f32;
+            color: #1a1a2e;
+        }
+
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #dce0e5;
+        }
+
+        .giver-name {
+            font-weight: 600;
+            font-size: 12px;
+            color: #1a1a2e;
+        }
+
+        .giver-coins {
+            font-size: 11px;
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        /* ===== 流状态表格 ===== */
+        .stream-table {
+            width: 100%;
+            font-size: 12px;
+            border-collapse: collapse;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e8ecf0;
+        }
+
+        .stream-table td,
+        .stream-table th {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eef0f4;
+            color: #1a1a2e;
+            text-align: left;
+        }
+
+        .stream-table th {
+            font-weight: 600;
+            color: #5a5a6e;
+            background: #f7f9fc;
+        }
+
+        .stream-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag-live {
+            border-radius: 30px;
+            padding: 2px 10px;
+            font-size: 10px;
+            font-weight: 600;
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: inline-block;
+        }
+
+        /* ===== 模态框 ===== */
+        .custom-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+        }
+
+        .custom-modal.show {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            width: 90%;
+            max-width: 380px;
+            background: #f0f2f5;
+            border-radius: 28px;
+            border: 1px solid #dce0e5;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #1a1a2e;
+        }
+
+        .modal-card h3 {
+            color: #1a1a2e;
+            font-size: 18px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .modal-field {
+            margin-bottom: 12px;
+        }
+
+        .modal-field label {
+            display: block;
+            font-size: 11px;
+            color: #5a5a6e;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .modal-field input {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #dce0e5;
+            padding: 10px 14px;
+            border-radius: 20px;
+            color: #1a1a2e;
+            font-size: 13px;
+            outline: none;
+            transition: 0.15s;
+        }
+
+        .modal-field input:focus {
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+        }
+
+        .modal-field input::placeholder {
+            color: #9a9aae;
+        }
+
+        .row-2col {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row-2col .modal-field {
+            flex: 1;
+        }
+
+        .play-stream-btn {
+            background: #e8ecf0;
+            border: 1px solid #6c5ce7;
+            color: #6c5ce7;
+            width: 100%;
+            padding: 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .play-stream-btn:active {
+            transform: scale(0.98);
+            background: #d5d9e0;
+        }
+
+        .apply-modal-btn {
+            background: #6c5ce7;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 6px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .apply-modal-btn:active {
+            transform: scale(0.98);
+            background: #5a4ad1;
+        }
+
+        .close-modal-btn {
+            background: transparent;
+            border: 1px solid #dce0e5;
+            width: 100%;
+            padding: 8px;
+            border-radius: 20px;
+            color: #5a5a6e;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .close-modal-btn:active {
+            transform: scale(0.98);
+            background: #e8ecf0;
+        }
+
+        /* 辅助提示：显示当前存储状态 */
+        .save-indicator {
+            font-size: 10px;
+            color: #6c5ce7;
+            text-align: center;
+            margin-top: 4px;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        /* ===== Toast ===== */
+        .toast-message {
+            position: fixed;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 13px;
+            z-index: 210;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+
+        .toast-animate {
+            animation: fadeOut 2s ease forwards;
+        }
+
+        /* ===== 动画 ===== */
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            70% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 480px) {
+            .chat-overlay {
+                width: 290px;
+                bottom: 80px;
+                left: 8px;
+            }
+
+            .mcn-panel {
+                width: 92%;
+                padding: 16px 12px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== 视频容器 ===== -->
+    <div class="video-fullscreen">
+        <video id="hlsVideo" autoplay playsinline webkit-playsinline></video>
+    </div>
+
+    <!-- ===== UI 覆盖层 ===== -->
+    <div class="ui-overlay">
+
+        <!-- 顶部栏 -->
+        <div class="top-bar">
+            <div class="anchor-info">
+                <img class="anchor-avatar" id="anchorAvatar" src="https://i.pravatar.cc/150?img=32" alt="主播头像">
+                <div class="stream-title" id="streamTitle">✨小可儿·巅峰之夜✨</div>
+                <div class="live-badge">LIVE</div>
+            </div>
+            <div class="right-actions">
+                <span class="viewer-count">👥 <span id="onlineCount">1,248</span></span>
+                <img src="imge/shuju.png" id="openDataBtn" alt="数据看板" style="height:24px;width:24px;cursor:pointer;"
+                    onerror="this.style.display='none';">
+            </div>
+        </div>
+
+        <!-- 聊天列表 -->
+        <div class="chat-overlay">
+            <div class="chat-messages-list" id="chatMessagesList"></div>
+        </div>
+
+        <!-- 底部输入 -->
+        <div class="bottom-input-area">
+            <input type="text" id="chatInput" placeholder="发条弹幕加入互动..." maxlength="45">
+            <button id="sendCommentBtn">发送</button>
+        </div>
+    </div>
+
+    <!-- ===== 遮罩 ===== -->
+    <div class="overlay" id="panelOverlay"></div>
+
+    <!-- ===== MCN 侧栏 (营收留存版 · 银白色主题) ===== -->
+    <div class="mcn-panel" id="mcnPanel">
+        <div class="panel-header">
+            <h2>📊 营收留存板</h2>
+            <button class="close-panel" id="closePanelBtn">✕</button>
+        </div>
+
+        <div class="section-title">💰 核心营收指标</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">累计打赏</div>
+                <div class="stat-value" id="statCoins">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">本场营收</div>
+                <div class="stat-value" id="statUsd">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">打赏付费率</div>
+                <div class="stat-value" id="statPayRate">4.2%</div>
+            </div>
+        </div>
+
+        <div class="section-title">📈 粉丝与流量留存</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">当前在线</div>
+                <div class="stat-value" id="statCurrent">1,248</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">巅峰同在</div>
+                <div class="stat-value" id="statPeak">1,892</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">累计场观</div>
+                <div class="stat-value" id="statTotal">5,621</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">人均停留</div>
+                <div class="stat-value" id="statStayTime">2m 45s</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">本场新增关注</div>
+                <div class="stat-value" id="statNewFollows">+382</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">公屏互动率</div>
+                <div class="stat-value" id="statChatRate">12.8%</div>
+            </div>
+        </div>
+
+        <div class="section-title">⏱️ 开播状态</div>
+        <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);">
+            <div class="stat-card">
+                <div class="stat-label">直播时长</div>
+                <div class="stat-value" id="statDuration">00:00:00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">打赏破冰人数</div>
+                <div class="stat-value" id="statIceBreak">0 人</div>
+            </div>
+        </div>
+
+        <div class="section-title">🏆 荣耀榜</div>
+        <div class="leaderboard-list" id="leaderboardList"></div>
+
+        <div class="section-title">📡 网络流状态</div>
+        <table class="stream-table">
+            <tr>
+                <th>流码率</th>
+                <td id="tbBitrate">6,200 kbps</td>
+                <td><span class="tag-live">稳定</span></td>
+            </tr>
+            <tr>
+                <th>帧率</th>
+                <td id="tbFps">60 fps</td>
+                <td><span class="tag-live">流畅</span></td>
+            </tr>
+            <tr>
+                <th>延迟延时</th>
+                <td id="tbLatency">1.6s</td>
+                <td><span class="tag-live">极低延迟</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 主播后台模态框 (含累计打赏自定义) ===== -->
+    <div class="custom-modal" id="dataModal">
+        <div class="modal-card">
+            <h3>🎛️ 主播后台 · 核心数据同步</h3>
+            <div class="modal-field"><label>🎤 主播标题 / 昵称</label><input type="text" id="modalStreamerTitle" maxlength="48">
+            </div>
+            <div class="modal-field"><label>👤 头像链接</label><input type="text" id="modalAvatarUrl"
+                    value="https://i.pravatar.cc/150?img=32"></div>
+            <div class="modal-field"><label>💰 累计打赏 (代币) — 留空则自动计算</label><input type="number" step="1"
+                    id="modalTotalCoins" placeholder="自动计算"></div>
+            <div class="modal-field"><label>💵 本场收益 (USD) — 设置后自动浮动增长</label><input type="number" step="0.01"
+                    id="modalRevenue" placeholder="0.00"></div>
+            <div class="modal-field"><label>📊 当前在线人数</label><input type="number" id="modalCurrent"></div>
+            <div class="row-2col">
+                <div class="modal-field"><label>📈 累计场观</label><input type="number" id="modalTotalViews"></div>
+                <div class="modal-field"><label>🔥 巅峰人数</label><input type="number" id="modalPeak"></div>
+            </div>
+            <div class="row-2col">
+                <div class="modal-field"><label>⏱️ 人均停留(分钟)</label><input type="number" step="0.1" id="modalStayMin">
+                </div>
+                <div class="modal-field"><label>➕ 新增关注</label><input type="number" id="modalNewFollows"></div>
+            </div>
+            <div class="modal-field"><label>💬 公屏互动率(%)</label><input type="number" step="0.1" id="modalChatRate"></div>
+            <div class="modal-field"><label>⏱️ 直播时长 (秒)</label><input type="number" id="modalDuration" placeholder="单位:秒"></div>
+            <div class="modal-field"><label>📡 M3U8 直播源地址</label><input type="text" id="modalM3u8Url"
+                    placeholder="https://.../index.m3u8"></div>
+            <button class="play-stream-btn" id="playStreamBtn">▶ 保存地址并激活音视频流</button>
+            <button class="apply-modal-btn" id="applyModalBtn">✅ 确认同步更改 · 自动保存</button>
+            <button class="close-modal-btn" id="closeModalBtn">取消</button>
+            <div class="save-indicator">💾 所有数据修改后自动保存在浏览器中，刷新页面不丢失</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ================================================================
+            //  1. 礼物配置
+            // ================================================================
+            var GIFT_CONFIG = [
+                { name: "badge", img: "Gift/1.png", baseValue: 10 },
+                { name: "Turntable", img: "Gift/2.png", baseValue: 18 },
+                { name: "bullion", img: "Gift/3.png", baseValue: 28 },
+                { name: "Bell", img: "Gift/4.png", baseValue: 52 },
+                { name: "Piggy Bank", img: "Gift/5.png", baseValue: 66 },
+                { name: "Treasure Chest", img: "Gift/6.png", baseValue: 188 },
+                { name: "Jewelry Box", img: "Gift/7.png", baseValue: 520 },
+                { name: "Music Box", img: "Gift/8.png", baseValue: 1000 },
+                { name: "harp", img: "Gift/9.png", baseValue: 1314 },
+                { name: "chocolate", img: "Gift/10.png", baseValue: 3000 },
+                { name: "lighter", img: "Gift/11.png", baseValue: 5200 },
+                { name: "Red Rose", img: "Gift/12.png", baseValue: 880 },
+                { name: "Griffon", img: "Gift/13.png", baseValue: 1999 },
+                { name: "Gift Pack ", img: "Gift/14.png", baseValue: 2888 },
+                { name: "Party Streamer Cannon", img: "Gift/15.png", baseValue: 5000 },
+                { name: "Compassion", img: "Gift/16.png", baseValue: 9999 },
+                { name: "Gift Package", img: "Gift/17.png", baseValue: 18888 },
+                { name: "Sports Car", img: "Gift/18.png", baseValue: 1 },
+                { name: "ice cream", img: "Gift/19.png", baseValue: 2 },
+                { name: "swan", img: "Gift/20.png", baseValue: 3 },
+                { name: "Blue Rose", img: "Gift/21.png", baseValue: 4 },
+                { name: "Elf Headpiece", img: "Gift/22.png", baseValue: 5 },
+                { name: "Token Box", img: "Gift/23.png", baseValue: 5 },
+                { name: "kiss", img: "Gift/24.png", baseValue: 5 },
+                { name: "Lavender House", img: "Gift/25.png", baseValue: 5 },
+            ];
+
+            // ================================================================
+            //  2. 用户名池 & 头像辅助
+            // ================================================================
+            var BASE_NAMES = [
+                'Scar', 'Abbott', 'Baird', 'Cade', 'Dane', 'Egan', 'Finn', 'Gale',
+                'Hans', 'Ivan', 'Jett', 'Kane', 'Lane', 'Mack', 'Nash', 'Oren',
+                'Penn', 'Quinn', 'Rex', 'Sean', 'Troy', 'Ulan', 'Vance', 'Wade',
+                'Xian', 'Yale', 'Zane', 'Amy', 'Beth', 'Cara', 'Dawn', 'Ella',
+                'Faye', 'Gina', 'Hope', 'Iris', 'Jade', 'Kira', 'Luna', 'Maya',
+                'Nina', 'Ona', 'Pia', 'Rhea', 'Sara', 'Tina', 'Uma', 'Vera',
+                'Wren', 'Xena', 'Yara', 'Zara', 'Leo', 'Mia', 'Noa', 'Oli',
+                'Kai', 'Lia', 'Max', 'Nia', 'Owen', 'Pax', 'Rue', 'Sky',
+                'Tess', 'Uri', 'Van', 'Wes', 'Xia', 'Yuk', 'Zed', 'Scar', 'Abbott', 'Baird', 'Borislav', 'Charlie',
+                'Channing', 'Clare', 'Darren', 'Dante', 'Edmund',
+                'Earl', 'Gale', 'George', 'Heather', 'Hilary', 'Isidore', 'Jarek', '不虚此行', '江南烟雨', '孤灯',
+                '无欲之争', '无平凡的壳', '释然', '年少无畏不自卑', '此曲已终', '词俗', '舍得', '假面', '♪no matter',
+                '暴雨柴舟', '救世主', '入我襟怀', '煙驅菰獨', '夜太媚', '乖就抱抱妳', '忒爽i', 'ほもの', '一度です',
+                '悲しい心', 'やさしい', '古くなった人', 'うそ', '风のように', '别れ', '忘れて', '미러 월드', '별○l',
+                '때때로', '그래서 기념', '만남의 죽음', '风清扬', '独孤求败', '东坡肉', '小甜甜', '虎哥破军', '凌云志',
+                '夕瑶仙子', '怒风', '北城以北', '南巷清风', '深渊骑士', '暴躁学姐', '温柔似水', '江湖故人', '陈年老酒',
+                '南笙北执', '孤傲的狼', '绝世容颜', '富甲一方', '梦回当年', '仗剑天涯', '不朽传奇'
+            ];
+            var MOCK_NAMES = BASE_NAMES.slice();
+
+            function getAvatarNumber(name) {
+                var hash = 0;
+                for (var i = 0; i < name.length; i++) {
+                    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+                    hash |= 0;
+                }
+                return (Math.abs(hash) % 70) + 1;
+            }
+
+            // ================================================================
+            //  3. 核心数据状态 + 持久化
+            // ================================================================
+            var currentGivers = [];
+            var totalCoinsAll = 0;
+            var top10TotalCoins = 0;
+
+            var defaultState = {
+                current: 103,
+                peak: 1892,
+                totalViews: 5621,
+                stayMinutes: 2.75,
+                newFollows: 382,
+                chatRate: 12.8,
+                seconds: 7650,
+                payRate: 4.25,
+                bitrate: 6000,
+                fps: 60,
+                latency: 1.8,
+                totalGiftCoins: 0,
+                top10RevenueCoins: 0,
+                customRevenue: null,
+                customTotalCoins: null,
+                streamTitle: '✨小可儿·巅峰之夜✨',
+                avatarUrl: 'https://i.pravatar.cc/150?img=32',
+                m3u8Url: ''
+            };
+
+            var globalState = JSON.parse(JSON.stringify(defaultState));
+            window._mcnState = globalState;
+
+            var STORAGE_KEY_STATE = 'mcn_dashboard_state';
+            var STORAGE_KEY_M3U8 = 'mcn_stream_m3u8_url';
+
+            // ================================================================
+            //  4. 持久化函数
+            // ================================================================
+            function saveStateToStorage() {
+                try {
+                    var data = {
+                        current: globalState.current,
+                        peak: globalState.peak,
+                        totalViews: globalState.totalViews,
+                        stayMinutes: globalState.stayMinutes,
+                        newFollows: globalState.newFollows,
+                        chatRate: globalState.chatRate,
+                        seconds: globalState.seconds,
+                        payRate: globalState.payRate,
+                        bitrate: globalState.bitrate,
+                        fps: globalState.fps,
+                        latency: globalState.latency,
+                        customRevenue: globalState.customRevenue,
+                        customTotalCoins: globalState.customTotalCoins,
+                        streamTitle: globalState.streamTitle,
+                        avatarUrl: globalState.avatarUrl,
+                        m3u8Url: globalState.m3u8Url
+                    };
+                    localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(data));
+                } catch (e) {
+                    console.warn('保存状态失败', e);
+                }
+            }
+
+            function loadStateFromStorage() {
+                try {
+                    var raw = localStorage.getItem(STORAGE_KEY_STATE);
+                    if (raw) {
+                        var saved = JSON.parse(raw);
+                        for (var key in saved) {
+                            if (saved.hasOwnProperty(key) && globalState.hasOwnProperty(key)) {
+                                globalState[key] = saved[key];
+                            }
+                        }
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('读取存储失败', e);
+                }
+                return false;
+            }
+
+            function saveM3U8(url) {
+                if (url) {
+                    localStorage.setItem(STORAGE_KEY_M3U8, url.trim());
+                    globalState.m3u8Url = url.trim();
+                    saveStateToStorage();
+                }
+            }
+
+            function getStoredM3U8() {
+                return localStorage.getItem(STORAGE_KEY_M3U8) || '';
+            }
+
+            // ================================================================
+            //  5. 工具函数
+            // ================================================================
+            function fmtDuration(sec) {
+                var h = Math.floor(sec / 3600),
+                    m = Math.floor((sec % 3600) / 60),
+                    s = sec % 60;
+                return h.toString().padStart(2, '0') + ':' +
+                    m.toString().padStart(2, '0') + ':' +
+                    s.toString().padStart(2, '0');
+            }
+
+            function showToast(msg, dur) {
+                dur = dur || 1800;
+                var toast = document.createElement('div');
+                toast.className = 'toast-message toast-animate';
+                toast.innerText = msg;
+                document.body.appendChild(toast);
+                setTimeout(function() { toast.remove(); }, dur);
+            }
+
+            // ================================================================
+            //  6. 渲染荣耀榜 + 营收
+            // ================================================================
+            function renderLeaderboardAndRevenue() {
+                if (!currentGivers.length) return;
+                currentGivers.sort(function(a, b) { return b.coins - a.coins; });
+                totalCoinsAll = currentGivers.reduce(function(sum, g) { return sum + g.coins; }, 0);
+                var top10 = currentGivers.slice(0, 10);
+                top10TotalCoins = top10.reduce(function(sum, g) { return sum + g.coins; }, 0);
+                globalState.totalGiftCoins = totalCoinsAll;
+                globalState.top10RevenueCoins = top10TotalCoins;
+
+                var container = document.getElementById('leaderboardList');
+                if (container) {
+                    container.innerHTML = top10.map(function(giver, idx) {
+                        var rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' :
+                            ''));
+                        var avatarNum = getAvatarNumber(giver.name);
+                        var avatarLocalPath = 'images/' + avatarNum + '.png';
+                        return '<div class="giver-item">' +
+                            '<div class="rank-badge ' + rankClass + '">' + (idx + 1) + '</div>' +
+                            '<img src="' + avatarLocalPath + '" class="avatar-sm" alt="头像" onerror="this.onerror=null; this.src=\'https://ui-avatars.com/api/?name=' +
+                            encodeURIComponent(giver.name) +
+                            '&background=6c5ce7&color=fff&size=64&bold=true\'">' +
+                            '<div><div class="giver-name">' + giver.name + '</div>' +
+                            '<div class="giver-coins">💎 ' + giver.coins.toLocaleString() + ' 代币</div></div>' +
+                            '</div>';
+                    }).join('');
+                }
+
+                var displayCoins = (globalState.customTotalCoins !== null) ? globalState.customTotalCoins : totalCoinsAll;
+                document.getElementById('statCoins').innerText = displayCoins.toLocaleString();
+
+                var revenue = globalState.customRevenue !== null ? globalState.customRevenue : (top10TotalCoins / 100);
+                document.getElementById('statUsd').innerText = '$' + revenue.toFixed(2);
+
+                var iceBreakCount = currentGivers.filter(function(g) { return g.coins > 0; }).length;
+                document.getElementById('statIceBreak').innerText = iceBreakCount + ' 人';
+            }
+
+            // ================================================================
+            //  7. 增加/更新送礼者
+            // ================================================================
+            function addOrUpdateGiver(userName, addedCoins) {
+                var existing = currentGivers.find(function(g) { return g.name === userName; });
+                if (existing) {
+                    existing.coins += addedCoins;
+                } else {
+                    currentGivers.push({ name: userName, coins: addedCoins });
+                }
+                renderLeaderboardAndRevenue();
+                saveStateToStorage();
+            }
+
+            // ================================================================
+            //  8. 添加礼物评论
+            // ================================================================
+            function addGiftComment(userName, giftName, giftImgPath, coinValue) {
+                var container = document.getElementById('chatMessagesList');
+                if (!container) return;
+                var commentDiv = document.createElement('div');
+                commentDiv.className = 'comment-item comment-item-gift';
+                var avatarNum = getAvatarNumber(userName);
+                var avatarImg = document.createElement('img');
+                avatarImg.className = 'comment-avatar';
+                avatarImg.src = 'images/' + avatarNum + '.png';
+                avatarImg.onerror = function() {
+                    if (!avatarImg.getAttribute('data-fallback')) {
+                        avatarImg.setAttribute('data-fallback', 'true');
+                        avatarImg.style.background = '#6c5ce7';
+                        avatarImg.style.display = 'flex';
+                        avatarImg.alt = '🎁';
+                    }
+                };
+                var contentDiv = document.createElement('div');
+                contentDiv.className = 'comment-content';
+                var nameSpan = document.createElement('span');
+                nameSpan.className = 'comment-name';
+                nameSpan.innerText = userName;
+                var giftText = document.createElement('span');
+                giftText.className = 'comment-text';
+                giftText.innerHTML = ' 已支付 ' + coinValue + ' token';
+                contentDiv.appendChild(nameSpan);
+                contentDiv.appendChild(giftText);
+                commentDiv.appendChild(avatarImg);
+                commentDiv.appendChild(contentDiv);
+                container.appendChild(commentDiv);
+                container.scrollTop = container.scrollHeight;
+                while (container.children.length > 50) {
+                    container.removeChild(container.firstChild);
+                }
+            }
+
+            // ================================================================
+            //  9. 随机送礼逻辑
+            // ================================================================
+            function randomSendGift() {
+                if (!GIFT_CONFIG.length) return;
+                var randomGift = GIFT_CONFIG[Math.floor(Math.random() * GIFT_CONFIG.length)];
+                var randomUser = MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)];
+                var giftValue = randomGift.baseValue;
+                addOrUpdateGiver(randomUser, giftValue);
+                addGiftComment(randomUser, randomGift.name, randomGift.img, giftValue);
+            }
+
+            // ================================================================
+            //  10. 初始化荣耀榜（随机打赏数据）
+            // ================================================================
+            function initRankingWithRandomGivers() {
+                var generated = [];
+                var totalUsers = Math.floor(Math.random() * 60) + 20;
+                var poolSize = MOCK_NAMES.length;
+                var selectedIndices = [];
+                var available = [];
+                for (var i = 0; i < poolSize; i++) available.push(i);
+                for (var i = available.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var temp = available[i];
+                    available[i] = available[j];
+                    available[j] = temp;
+                }
+                var actualCount = Math.min(totalUsers, poolSize);
+                for (var idx = 0; idx < actualCount; idx++) {
+                    var nameIndex = available[idx];
+                    var name = MOCK_NAMES[nameIndex];
+                    var coins = 0;
+                    if (Math.random() > 0.3) {
+                        if (idx < 3) coins = Math.floor(Math.random() * 10) + 40;
+                        else if (idx < 10) coins = Math.floor(Math.random() * 10) + 2;
+                        else if (idx < 25) coins = Math.floor(Math.random() * 5) + 5;
+                        else coins = Math.floor(Math.random() * 1) + 5;
+                    } else {
+                        coins = 0;
+                    }
+                    generated.push({ name: name, coins: coins });
+                }
+                currentGivers = generated;
+                renderLeaderboardAndRevenue();
+            }
+
+            // ================================================================
+            //  11. 更新全部 UI (包括从存储恢复的标题/头像)
+            // ================================================================
+            function updateAllUI() {
+                document.getElementById('streamTitle').innerText = globalState.streamTitle || '✨小可儿·巅峰之夜✨';
+                document.getElementById('anchorAvatar').src = globalState.avatarUrl || 'https://i.pravatar.cc/150?img=32';
+
+                document.getElementById('onlineCount').innerText = globalState.current.toLocaleString();
+                document.getElementById('statCurrent').innerText = globalState.current.toLocaleString();
+                document.getElementById('statPeak').innerText = globalState.peak.toLocaleString();
+                document.getElementById('statTotal').innerText = globalState.totalViews.toLocaleString();
+
+                var displayCoins = (globalState.customTotalCoins !== null) ? globalState.customTotalCoins : globalState
+                    .totalGiftCoins;
+                document.getElementById('statCoins').innerText = displayCoins.toLocaleString();
+
+                var revenue = globalState.customRevenue !== null ? globalState.customRevenue : (globalState
+                    .top10RevenueCoins / 100);
+                document.getElementById('statUsd').innerText = '$' + revenue.toFixed(2);
+
+                document.getElementById('statDuration').innerText = fmtDuration(globalState.seconds);
+                document.getElementById('statPayRate').innerText = globalState.payRate.toFixed(2) + '%';
+                var mins = Math.floor(globalState.stayMinutes);
+                var secs = Math.floor((globalState.stayMinutes % 1) * 60);
+                document.getElementById('statStayTime').innerText = mins + 'm ' + secs + 's';
+                document.getElementById('statNewFollows').innerText = '+' + globalState.newFollows;
+                document.getElementById('statChatRate').innerText = globalState.chatRate.toFixed(1) + '%';
+                document.getElementById('tbBitrate').innerText = globalState.bitrate.toLocaleString() + ' kbps';
+                document.getElementById('tbFps').innerText = globalState.fps + ' fps';
+                document.getElementById('tbLatency').innerText = globalState.latency + 's';
+                var iceBreakCount = currentGivers.filter(function(g) { return g.coins > 0; }).length;
+                document.getElementById('statIceBreak').innerText = iceBreakCount + ' 人';
+            }
+
+            // ================================================================
+            //  12. 定时器：数据动态变化 + 收益浮动 + 累计打赏浮动
+            // ================================================================
+            setInterval(function() {
+                var delta = Math.floor(Math.random() * 10) - 3;
+                var newCurrent = globalState.current + delta;
+                if (newCurrent < 60) newCurrent = 120;
+                globalState.current = newCurrent;
+                if (globalState.current > globalState.peak) globalState.peak = globalState.current;
+                if (Math.random() > 0.65) globalState.totalViews += Math.floor(Math.random() * 12) + 3;
+                if (Math.random() > 0.7) globalState.newFollows += 1;
+                globalState.stayMinutes = Math.min(6.5, Math.max(1.6, globalState.stayMinutes + (Math.random() * 0.04 -
+                    0.02)));
+                globalState.chatRate = Math.min(22, Math.max(7.5, globalState.chatRate + (Math.random() * 0.2 - 0.1)));
+                globalState.payRate = Math.min(9.5, Math.max(3.2, globalState.payRate + (Math.random() * 0.08 - 0.04)));
+                globalState.seconds++;
+                globalState.bitrate = 5400 + Math.floor(Math.random() * 800);
+                globalState.latency = +(1.3 + Math.random() * 0.9).toFixed(1);
+
+                if (globalState.customRevenue !== null) {
+                    var inc = 0.5 + Math.random() * 2.5;
+                    globalState.customRevenue += inc;
+                    globalState.customRevenue = Math.round(globalState.customRevenue * 100) / 100;
+                }
+
+                if (globalState.customTotalCoins !== null) {
+                    var incCoins = Math.floor(Math.random() * 5) + 1;
+                    globalState.customTotalCoins += incCoins;
+                }
+
+                updateAllUI();
+                saveStateToStorage();
+            }, 3000);
+
+            // ================================================================
+            //  13. 定时随机送礼（8~15 秒）
+            // ================================================================
+            setInterval(function() {
+                randomSendGift();
+            }, Math.floor(Math.random() * 1000) + 3000);
+
+            // ================================================================
+            //  14. 模拟普通弹幕
+            // ================================================================
+            const MOCK_CHATS = [
+                '今天好漂亮！', '妈妈', '小姐姐', '漂亮', '爱了爱了', '颜值天花板', '眼睛会说话', '声音好听', '嫁给我吧', '求私聊', '别走，再看一会儿',
+                '这谁顶得住啊', '别理那些黑粉', '开美颜了吧',
+                '兄弟们冲啊', '求加微信', '做我女朋友吧', '我养你', '嫁给我吧', '但为了你我愿意把吃泡面的钱省下来送给你', '耳环不错', '我感觉我中了你的毒',
+                '手指就不听使唤地点进来', '我会点赞~不白嫖',
+                '尊嘟假嘟', '背景太假了', 'DNA动了', '我恋爱了兄弟们', '今天真准时', '长在我的审美点上', '沦陷了', 'Good-looking girl', '你是单身吗',
+                '大好きです！', '这种怎么追', '等我中彩票来找你',
+                '美是美了 但是却了我', 'どういたしまして', '素敵な服', 'わあ、とても美しい！', 'この女性は手に入れる価値がある。', '此女值得拥有', '你好 BOSS',
+                '广东妹子', 'とても美しい', '军师们。我想得到她',
+                '你抽烟吗', 'タバコは吸​​いますか', '年轻真好', '少し上品', '说一下三围', '目に心地よい', 'pleasing to the eye', '好甜啊',
+                ' beautiful', '我娶回家供着', '我又一见钟情', '耐看', '好美', '喜歡',
+                '又便宜那個小子了', '愛了 愛了', '好久不見', '宝宝可以加你微信吗?', 'Will you marry me?', '你会想我吗?', 'Chinese',
+                'Love at first sight', 'Im single', '너무 달콤해', '내 아기',
+                '我可以跟你谈一天、不能再多了', '你又在搞什么花样', '多大年纪', '저는 당신의 중고 옷을 원합니다', '你可以娶我吗', '勉强能入眼',
+                '하루에 네 번이면 충분할 거예요.', '多高 媳妇', '美死了',
+                '要怎么你才能注意我', '老婆最近你瘦了', '你是AI', '姐姐 你好美', '우리 같이 게임할 수 있을까요?', '能一起玩吗', '什么价格',
+                'いくらまで予約できますか？', '老婆 我流鼻血了', '中国哪些的',
+                'Everyones talking about this nexlify', 'super', 'alhamdulilah', ' you are my love', 'super',
+                'Were beautiful', 'I am a fashion designer', 'wow', 'dreaamgirl', ' hi beauty',
+                'Love your jig ka lee s', 'why did my bf send me ts', 'hy where you from ',
+                'Marry them or like my comment', 'supercell id ?', 'if he see this im cooked..', 'NAH SUPRAS ARE THE BEST',
+                'girl name?',
+                '正点🥰', '🥰🥰🥰🥰', '😍😍', 'WOWWWWWW', '🤩🤩', '你命里缺少了我', '喜欢上了😍 咋办啊', '我要吃饺子喝汤',
+                '好吧ˇ可以答应你追求我了', '谁在谈这样女孩', '我恨你 老婆', '看着流口水了', 'nice', '此女易孕', '怎么能娶你', '家妻献丑了~',
+                '家妻卖艺…不要其他想法啊', '姐姐 我饿了', '我有三百万能娶你吗', '看着有点费钱啊', '😃😃 能一起玩吗', '😃😃😃', '👍', '👍👍👍', '🤗🤗',
+                '❤️❤️❤️❤️❤️', '🌹', '🌹🌹', '🌹🌹🌹🌹', ' 我流鼻血了 👩👩', '👟👟', '🧢🧢🧢🧢', '💋', '💋💋💋',
+                'bravissimi 🥰💯❤️',
+                'Solo per guardare 👀 mi sono stancata 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣', '不能再看了 我的缓缓'
+            ];
+
+            setInterval(function() {
+                var randName = MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)];
+                var randMsg = MOCK_CHATS[Math.floor(Math.random() * MOCK_CHATS.length)];
+                var container = document.getElementById('chatMessagesList');
+                if (container) {
+                    var commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment-item';
+                    var avatarNum = getAvatarNumber(randName);
+                    var avatarImg = document.createElement('img');
+                    avatarImg.className = 'comment-avatar';
+                    avatarImg.src = 'images/' + avatarNum + '.png';
+                    avatarImg.onerror = function() {
+                        if (!avatarImg.getAttribute('data-fallback')) {
+                            avatarImg.setAttribute('data-fallback', 'true');
+                            avatarImg.style.background = '#6c5ce7';
+                        }
+                    };
+                    var contentDiv = document.createElement('div');
+                    contentDiv.className = 'comment-content';
+                    var nameSpan = document.createElement('span');
+                    nameSpan.className = 'comment-name';
+                    nameSpan.innerText = randName;
+                    var textSpan = document.createElement('span');
+                    textSpan.className = 'comment-text';
+                    textSpan.innerText = ' ：' + randMsg;
+                    contentDiv.appendChild(nameSpan);
+                    contentDiv.appendChild(textSpan);
+                    commentDiv.appendChild(avatarImg);
+                    commentDiv.appendChild(contentDiv);
+                    container.appendChild(commentDiv);
+                    container.scrollTop = container.scrollHeight;
+                    while (container.children.length > 50) container.removeChild(container.firstChild);
+                }
+            }, 2800);
+
+            // ================================================================
+            //  15. 发送评论（用户输入）
+            // ================================================================
+            document.getElementById('sendCommentBtn').addEventListener('click', function() {
+                var txt = document.getElementById('chatInput').value.trim();
+                if (txt) {
+                    var container = document.getElementById('chatMessagesList');
+                    var userName = '·观众我';
+                    var commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment-item';
+                    var avatarNum = getAvatarNumber(userName);
+                    var avatarImg = document.createElement('img');
+                    avatarImg.className = 'comment-avatar';
+                    avatarImg.src = 'images/' + avatarNum + '.png';
+                    avatarImg.onerror = function() {
+                        if (!avatarImg.getAttribute('data-fallback')) {
+                            avatarImg.setAttribute('data-fallback', 'true');
+                            avatarImg.style.background = '#6c5ce7';
+                        }
+                    };
+                    var contentDiv = document.createElement('div');
+                    contentDiv.className = 'comment-content';
+                    var nameSpan = document.createElement('span');
+                    nameSpan.className = 'comment-name';
+                    nameSpan.innerText = userName;
+                    var textSpan = document.createElement('span');
+                    textSpan.className = 'comment-text';
+                    textSpan.innerText = ' ：' + txt;
+                    contentDiv.appendChild(nameSpan);
+                    contentDiv.appendChild(textSpan);
+                    commentDiv.appendChild(avatarImg);
+                    commentDiv.appendChild(contentDiv);
+                    container.appendChild(commentDiv);
+                    container.scrollTop = container.scrollHeight;
+                    while (container.children.length > 50) container.removeChild(container.firstChild);
+                    document.getElementById('chatInput').value = '';
+                }
+            });
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') document.getElementById('sendCommentBtn').click();
+            });
+
+            // ================================================================
+            //  16. 侧栏交互
+            // ================================================================
+            document.getElementById('openDataBtn').addEventListener('click', function() {
+                document.getElementById('mcnPanel').classList.add('open');
+                document.getElementById('panelOverlay').classList.add('show');
+            });
+            document.getElementById('closePanelBtn').addEventListener('click', function() {
+                document.getElementById('mcnPanel').classList.remove('open');
+                document.getElementById('panelOverlay').classList.remove('show');
+            });
+            document.getElementById('panelOverlay').addEventListener('click', function() {
+                document.getElementById('mcnPanel').classList.remove('open');
+                document.getElementById('panelOverlay').classList.remove('show');
+            });
+
+            // ================================================================
+            //  17. 主播后台模态框 (含累计打赏和本场收益自定义)
+            // ================================================================
+            var modal = document.getElementById('dataModal');
+            var anchorImg = document.getElementById('anchorAvatar');
+            var currentM3U8 = globalState.m3u8Url || '';
+
+            function openModalFill() {
+                document.getElementById('modalStreamerTitle').value = globalState.streamTitle || '';
+                document.getElementById('modalAvatarUrl').value = globalState.avatarUrl || '';
+                var totalCoinsVal = globalState.customTotalCoins !== null ? globalState.customTotalCoins : '';
+                document.getElementById('modalTotalCoins').value = totalCoinsVal;
+                var revenueVal = globalState.customRevenue !== null ? globalState.customRevenue : (globalState
+                    .top10RevenueCoins / 100);
+                document.getElementById('modalRevenue').value = revenueVal.toFixed(2);
+                document.getElementById('modalCurrent').value = globalState.current;
+                document.getElementById('modalTotalViews').value = globalState.totalViews;
+                document.getElementById('modalPeak').value = globalState.peak;
+                document.getElementById('modalStayMin').value = globalState.stayMinutes;
+                document.getElementById('modalNewFollows').value = globalState.newFollows;
+                document.getElementById('modalChatRate').value = globalState.chatRate;
+                document.getElementById('modalDuration').value = globalState.seconds;
+                document.getElementById('modalM3u8Url').value = currentM3U8;
+                modal.classList.add('show');
+            }
+
+            function applySync() {
+                var newTitle = document.getElementById('modalStreamerTitle').value.trim();
+                if (newTitle) {
+                    globalState.streamTitle = newTitle;
+                }
+                var avatarUrl = document.getElementById('modalAvatarUrl').value.trim();
+                if (avatarUrl) {
+                    globalState.avatarUrl = avatarUrl;
+                    document.getElementById('anchorAvatar').src = avatarUrl;
+                }
+
+                var totalCoinsVal = document.getElementById('modalTotalCoins').value.trim();
+                if (totalCoinsVal !== '') {
+                    var parsed = parseFloat(totalCoinsVal);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                        globalState.customTotalCoins = Math.round(parsed);
+                    } else {
+                        globalState.customTotalCoins = null;
+                    }
+                } else {
+                    globalState.customTotalCoins = null;
+                }
+
+                var revenueVal = parseFloat(document.getElementById('modalRevenue').value);
+                if (!isNaN(revenueVal) && revenueVal >= 0) {
+                    globalState.customRevenue = revenueVal;
+                } else {
+                    globalState.customRevenue = null;
+                }
+
+                if (document.getElementById('modalCurrent').valueAsNumber >= 0) globalState.current = document
+                    .getElementById('modalCurrent').valueAsNumber;
+                if (document.getElementById('modalTotalViews').valueAsNumber >= 0) globalState.totalViews = document
+                    .getElementById('modalTotalViews').valueAsNumber;
+                if (document.getElementById('modalPeak').valueAsNumber >= 0) globalState.peak = document.getElementById(
+                    'modalPeak').valueAsNumber;
+                if (document.getElementById('modalStayMin').valueAsNumber > 0) globalState.stayMinutes = document
+                    .getElementById('modalStayMin').valueAsNumber;
+                if (document.getElementById('modalNewFollows').valueAsNumber >= 0) globalState.newFollows = document
+                    .getElementById('modalNewFollows').valueAsNumber;
+                if (document.getElementById('modalChatRate').valueAsNumber >= 0) globalState.chatRate = document
+                    .getElementById('modalChatRate').valueAsNumber;
+                if (document.getElementById('modalDuration').valueAsNumber >= 0) globalState.seconds = document
+                    .getElementById('modalDuration').valueAsNumber;
+
+                var m3u8 = document.getElementById('modalM3u8Url').value.trim();
+                if (m3u8) {
+                    saveM3U8(m3u8);
+                    currentM3U8 = m3u8;
+                }
+
+                updateAllUI();
+                saveStateToStorage();
+                modal.classList.remove('show');
+                showToast('✅ 所有数据已同步并自动保存到浏览器');
+            }
+
+            anchorImg.addEventListener('click', openModalFill);
+            document.getElementById('applyModalBtn').addEventListener('click', applySync);
+            document.getElementById('closeModalBtn').addEventListener('click', function() {
+                modal.classList.remove('show');
+            });
+
+            // ================================================================
+            //  18. HLS 直播流
+            // ================================================================
+            var videoEl = document.getElementById('hlsVideo');
+            var hls = null;
+
+            function loadM3U8(url, startMuted) {
+                startMuted = (startMuted !== undefined) ? startMuted : true;
+                if (!url) return;
+                if (hls) {
+                    hls.destroy();
+                    hls = null;
+                }
+                videoEl.muted = startMuted;
+                if (Hls.isSupported()) {
+                    hls = new Hls({ capLevelToPlayerSize: true });
+                    hls.loadSource(url);
+                    hls.attachMedia(videoEl);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        videoEl.play().catch(function(e) { console.log(e); });
+                    });
+                } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoEl.src = url;
+                    videoEl.play().catch(function(e) { console.log(e); });
+                }
+                currentM3U8 = url;
+                globalState.m3u8Url = url;
+                saveStateToStorage();
+            }
+
+            document.getElementById('playStreamBtn').addEventListener('click', function() {
+                var newUrl = document.getElementById('modalM3u8Url').value.trim();
+                if (newUrl) {
+                    saveM3U8(newUrl);
+                    loadM3U8(newUrl, false);
+                    modal.classList.remove('show');
+                    showToast('🎬 直播流已切换');
+                } else {
+                    showToast('❌ 地址无效');
+                }
+            });
+
+            window.addEventListener('click', function() {
+                if (videoEl && videoEl.muted) {
+                    videoEl.muted = false;
+                    videoEl.play().catch(function(e) { console.log(e); });
+                }
+            }, { once: true });
+
+            var storedUrl = getStoredM3U8() || globalState.m3u8Url;
+            if (storedUrl && storedUrl.trim()) {
+                loadM3U8(storedUrl, true);
+            } else {
+                loadM3U8('https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8',
+                    true);
+            }
+
+            // ================================================================
+            //  19. 启动系统：先加载存储，再初始化打赏数据
+            // ================================================================
+            var hasSaved = loadStateFromStorage();
+            if (hasSaved) {
+                document.getElementById('streamTitle').innerText = globalState.streamTitle || '✨小可儿·巅峰之夜✨';
+                document.getElementById('anchorAvatar').src = globalState.avatarUrl || 'https://i.pravatar.cc/150?img=32';
+                if (globalState.m3u8Url) {
+                    loadM3U8(globalState.m3u8Url, true);
+                }
+            }
+
+            initRankingWithRandomGivers();
+            updateAllUI();
+            saveStateToStorage();
+
+        })();
+    </script>
+
+</body>
+
+</html>
