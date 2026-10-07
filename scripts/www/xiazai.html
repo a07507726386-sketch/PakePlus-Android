@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#1E88E5">
+    <title>APK 下载 | 本地安装包</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击灰色背景 */
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, 'Noto Sans', sans-serif;
+            background: linear-gradient(135deg, #f0f4fa 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* 主卡片 - 优雅居中，自适应宽度 */
+        .apk-card {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(0px);
+            border-radius: 56px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.05);
+            padding: 2rem 1.8rem 2.2rem 1.8rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* 应用图标区域 */
+        .icon-wrapper {
+            margin-bottom: 1rem;
+        }
+        .apk-icon {
+            font-size: 4.5rem;
+            display: inline-block;
+            filter: drop-shadow(0 12px 18px rgba(0,0,0,0.12));
+            background: linear-gradient(145deg, #fff, #f5f7fc);
+            padding: 0.6rem;
+            border-radius: 48px;
+            width: 100px;
+            height: 100px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(115deg, #0f2b3d, #1e4a6e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            margin-bottom: 0.3rem;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #eef2ff;
+            padding: 0.3rem 1rem;
+            border-radius: 60px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e4a6e;
+            margin-bottom: 1.2rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* 文件信息面板 */
+        .file-info {
+            background: #f8fafc;
+            border-radius: 32px;
+            padding: 1rem 1.2rem;
+            margin: 0 0 1.8rem 0;
+            border: 1px solid #e2edf2;
+            text-align: left;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.8rem;
+            background: #eef2f8;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+        }
+        .info-value {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: #0a2b3b;
+            word-break: break-all;
+            text-align: right;
+            background: #ffffffcc;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+        }
+
+        /* 超大下载按钮 - 完全居中，移动端舒适 */
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            width: 100%;
+            margin: 0 auto 1.2rem auto;
+            background: linear-gradient(105deg, #1e6f3f 0%, #2b8f54 100%);
+            border: none;
+            padding: 1rem 0;
+            font-size: 1.7rem;
+            font-weight: 700;
+            font-family: inherit;
+            color: white;
+            border-radius: 90px;
+            box-shadow: 0 16px 28px -10px rgba(30, 111, 63, 0.4);
+            transition: transform 0.18s, box-shadow 0.2s, background 0.2s;
+            cursor: pointer;
+            letter-spacing: 1px;
+            backdrop-filter: blur(2px);
+        }
+
+        /* 按钮点击反馈 (移动端触感) */
+        .download-btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(105deg, #185f37, #247c4a);
+        }
+
+        .download-btn span {
+            font-size: 1.9rem;
+            line-height: 1;
+        }
+
+        /* 辅助提示区域 */
+        .info-note {
+            background: #eef3fc;
+            border-radius: 40px;
+            padding: 0.7rem 1rem;
+            font-size: 0.7rem;
+            color: #2c5a73;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 0.8rem;
+        }
+
+        .info-note code {
+            background: #ffffffcc;
+            padding: 0.2rem 0.7rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            color: #0e4b2c;
+        }
+
+        .file-size-badge {
+            background: #d4e2f0;
+            border-radius: 30px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        footer {
+            margin-top: 1.2rem;
+            font-size: 0.6rem;
+            text-align: center;
+            color: #6b7c93;
+            letter-spacing: 0.3px;
+        }
+
+        /* 响应式微调 - 完美适应安卓小屏 */
+        @media (max-width: 520px) {
+            .apk-card {
+                padding: 1.5rem 1.2rem 1.8rem 1.2rem;
+                border-radius: 44px;
+            }
+            .download-btn {
+                font-size: 1.5rem;
+                padding: 0.85rem 0;
+                gap: 10px;
+            }
+            .download-btn span {
+                font-size: 1.7rem;
+            }
+            h1 {
+                font-size: 1.65rem;
+            }
+            .apk-icon {
+                width: 80px;
+                height: 80px;
+                font-size: 3.2rem;
+            }
+            .info-value {
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .info-value {
+                text-align: left;
+                width: 100%;
+            }
+        }
+
+        /* 下载中禁用样式 (避免重复点击) */
+        .download-btn.downloading {
+            opacity: 0.8;
+            transform: scale(0.97);
+            pointer-events: none;
+            background: linear-gradient(105deg, #3c7a56, #479f6b);
+        }
+
+        /* 简单 toast 提示样式 */
+        .custom-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 10000;
+            white-space: nowrap;
+            max-width: 85%;
+            white-space: normal;
+            text-align: center;
+            font-family: system-ui, sans-serif;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="apk-card">
+    <div class="icon-wrapper">
+        <div class="apk-icon">📦⬇️</div>
+    </div>
+    <h1>CMFA 安装包</h1>
+    <div class="version-badge">arm64-v8a · 稳定版</div>
+
+    <!-- 本地 APK 详细信息展示 -->
+    <div class="file-info">
+        <div class="info-row">
+            <span class="info-label">📁 文件名</span>
+            <span class="info-value" id="fileNameDisplay">cmfa-2.11.25-meta-arm64-v8a-release.apk</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">📂 相对路径</span>
+            <span class="info-value" id="filePathDisplay">downlo/</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">📱 适配架构</span>
+            <span class="info-value">ARM64-v8a (64位)</span>
+        </div>
+    </div>
+
+    <!-- 超大居中下载按钮 - 点击下载本地 APK -->
+    <button class="download-btn" id="apkDownloadBtn">
+        <span>📥</span> 下载 APK 文件
+    </button>
+
+    <div class="info-note">
+        💡 点击按钮立即下载本地安装包
+        <code>文件位于 downlo/ 目录</code>
+        <span class="file-size-badge">约 86 MB (预估)</span>
+    </div>
+    <footer>适用于 Android 设备 · 安全下载</footer>
+</div>
+
+<script>
+    (function() {
+        // ---------- 配置区域 ----------
+        // 用户指定的本地 APK 文件路径 (相对于当前HTML文件的位置)
+        // 路径示例: 当前HTML在项目根目录, APK位于 downlo/cmfa-2.11.25-meta-arm64-v8a-release.apk
+        const LOCAL_APK_PATH = "./downlo/cmfa-2.11.25-meta-arm64-v8a-release.apk";
+        const FILENAME = "cmfa-2.11.25-meta-arm64-v8a-release.apk";
+        
+        // DOM 元素
+        const downloadBtn = document.getElementById('apkDownloadBtn');
+        const fileNameSpan = document.getElementById('fileNameDisplay');
+        const filePathSpan = document.getElementById('filePathDisplay');
+        
+        // 更新显示路径细节 (仅作展示)
+        if (fileNameSpan) fileNameSpan.innerText = FILENAME;
+        if (filePathSpan) filePathSpan.innerText = "downlo/ (相对路径)";
+        
+        // 轻提示功能 (避免 alert 破坏体验)
+        let toastTimeout = null;
+        function showToast(message, isError = false) {
+            const existingToast = document.querySelector('.custom-toast');
+            if (existingToast) existingToast.remove();
+            if (toastTimeout) clearTimeout(toastTimeout);
+            
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            toast.innerText = message;
+            if (isError) {
+                toast.style.background = 'rgba(200, 60, 60, 0.92)';
+                toast.style.backdropFilter = 'blur(12px)';
+            } else {
+                toast.style.background = 'rgba(30, 111, 63, 0.92)';
+            }
+            document.body.appendChild(toast);
+            
+            toastTimeout = setTimeout(() => {
+                if (toast && toast.remove) toast.remove();
+            }, 2800);
+        }
+        
+        // 核心下载逻辑: 触发本地 APK 文件下载
+        function triggerDownload(downloadUrl) {
+            if (!downloadUrl || downloadUrl.trim() === "") {
+                showToast("❌ 下载路径无效，请检查配置", true);
+                return false;
+            }
+            
+            // 防止快速连续点击
+            if (downloadBtn.classList.contains('downloading')) {
+                showToast("⏳ 下载已开始，请稍候...", false);
+                return false;
+            }
+            
+            // 添加下载样式锁定
+            downloadBtn.classList.add('downloading');
+            const originalHTML = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = `<span>⏳</span> 准备下载...`;
+            
+            // 构造合法URL（相对路径或绝对路径都兼容，保留原始相对路径）
+            let finalUrl = downloadUrl.trim();
+            
+            // 创建一个隐藏的 <a> 标签触发下载 (更稳妥方式，支持 download 属性可选，但不跨域)
+            // 由于是同源本地文件（file协议或http服务），直接使用 location.href 或者 a.click 均可。
+            // 为了统一体验且确保部分安卓浏览器正确识别为下载而不是预览，使用动态链接并尝试添加 download 属性。
+            // 注意: download 属性在同源或 blob/data 有效，但在 file:// 协议下也多数有效。为了最大兼容：
+            // 使用 window.location.href 最简单可靠，大部分安卓浏览器会直接触发下载。
+            try {
+                // 方法1: 直接跳转 (适用于绝大多数移动端浏览器下载apk)
+                window.location.href = finalUrl;
+                showToast(`🚀 开始下载 ${FILENAME}`, false);
+                
+                // 延迟恢复按钮样式 (确保下载触发后恢复)
+                setTimeout(() => {
+                    if (downloadBtn.classList.contains('downloading')) {
+                        downloadBtn.classList.remove('downloading');
+                        downloadBtn.innerHTML = originalHTML;
+                    }
+                }, 1500);
+                
+                // 额外保险: 若3秒后还没恢复，强制恢复（避免卡死）
+                setTimeout(() => {
+                    if (downloadBtn.classList.contains('downloading')) {
+                        downloadBtn.classList.remove('downloading');
+                        downloadBtn.innerHTML = originalHTML;
+                    }
+                }, 4000);
+                
+                return true;
+            } catch (err) {
+                console.error("下载触发异常:", err);
+                showToast("⚠️ 无法启动下载，请检查文件路径或网络", true);
+                downloadBtn.classList.remove('downloading');
+                downloadBtn.innerHTML = originalHTML;
+                return false;
+            }
+        }
+        
+        // 监听下载按钮点击
+        function onDownloadClick() {
+            // 直接使用配置的本地 APK 路径
+            triggerDownload(LOCAL_APK_PATH);
+        }
+        
+        // 绑定事件 (移动端click完美支持)
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', onDownloadClick);
+        }
+        
+        // 可选: 添加页面启动时验证路径是否存在 (静默处理，不对用户报错，避免干扰)
+        // 仅控制台输出建议，因为无法跨域预检本地文件，避免误报。
+        const checkPathHint = () => {
+            console.log(`[APK下载器] 目标文件: ${LOCAL_APK_PATH}`);
+            console.log(`提示: 请确保 HTML 文件同级目录下有 "downlo" 文件夹，且包含文件 "${FILENAME}"`);
+        };
+        checkPathHint();
+        
+        // 增加一个友好的说明：如果用户点击后未下载，提示可能路径不对，但不在页面中强制弹窗干扰。
+        // 额外touchstart优化,保证移动端即时响应
+        downloadBtn.addEventListener('touchstart', function(e) {
+            // 只是为了提升响应速度，不做阻止
+        }, { passive: true });
+        
+        // 自适应完美, 显示文件大小提示(非精确)
+        // 如果需要更准确可发请求获取文件大小，但为了精简并避免跨域问题，保持静态提示即可
+    })();
+</script>
+</body>
+</html>
