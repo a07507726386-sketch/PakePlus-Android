@@ -781,7 +781,7 @@
             <div class="anchor-info">
                 <img class="anchor-avatar" id="anchorAvatar" src="https://i.pravatar.cc/150?img=32" alt="主播头像">
                 <div class="stream-title" id="streamTitle">✨小可儿·巅峰之夜✨</div>
-                <div class="live-badge">LIVE</div>
+                <div class="live-badge" onclick="livebibo()">LIVE</div>
             </div>
             <div class="right-actions">
                 <span class="viewer-count">👥 <span id="onlineCount">1,248</span></span>
@@ -978,7 +978,7 @@
                 '悲しい心', 'やさしい', '古くなった人', 'うそ', '风のように', '别れ', '忘れて', '미러 월드', '별○l',
                 '때때로', '그래서 기념', '만남의 죽음', '风清扬', '独孤求败', '东坡肉', '小甜甜', '虎哥破军', '凌云志',
                 '夕瑶仙子', '怒风', '北城以北', '南巷清风', '深渊骑士', '暴躁学姐', '温柔似水', '江湖故人', '陈年老酒',
-                '南笙北执', '孤傲的狼', '绝世容颜', '富甲一方', '梦回当年', '仗剑天涯', '不朽传奇'
+                '南笙北执', '孤傲的狼', '绝世容颜', '富甲一方', '梦回当年', '仗剑天涯', '不朽传奇','Enperss','Deadly','Old flame','Crazy','Душа моя','Лунная пыль'
             ];
             var MOCK_NAMES = BASE_NAMES.slice();
 
@@ -1329,7 +1329,7 @@
                 }
 
 
-                
+
 
 
 
@@ -1342,12 +1342,13 @@
             // ================================================================
             setInterval(function () {
                 randomSendGift();
+
             }, Math.floor(Math.random() * 10) + 3096);
 
             // ================================================================
             //  14. 模拟普通弹幕
             // ================================================================
-             const MOCK_CHATS = [
+            const MOCK_CHATS = [
                 '今天好漂亮！', '妈妈', '小姐姐', '漂亮', '爱了爱了', '颜值天花板', '眼睛会说话', '声音好听', '嫁给我吧', '求私聊', '别走，再看一会儿', '这谁顶得住啊', '别理那些黑粉', '开美颜了吧',
                 '兄弟们冲啊', '求加微信', '做我女朋友吧', '我养你', '嫁给我吧', '但为了你我愿意把吃泡面的钱省下来送给你', '耳环不错', '我感觉我中了你的毒', '手指就不听使唤地点进来', '我会点赞~不白嫖',
                 '尊嘟假嘟', '背景太假了', 'DNA动了', '我恋爱了兄弟们', '今天真准时', '长在我的审美点上', '沦陷了', 'Good-looking girl', '你是单身吗', '大好きです！', '这种怎么追', '等我中彩票来找你',
@@ -1360,8 +1361,16 @@
                 'Love your jig ka lee s', 'why did my bf send me ts', 'hy where you from ', 'Marry them or like my comment', 'supercell id ?', 'if he see this im cooked..', 'NAH SUPRAS ARE THE BEST', 'girl name?',
                 '正点🥰', '🥰🥰🥰🥰', '😍😍', 'WOWWWWWW', '🤩🤩', '你命里缺少了我', '喜欢上了😍 咋办啊', '我要吃饺子喝汤', '好吧ˇ可以答应你追求我了', '谁在谈这样女孩', '我恨你 老婆', '看着流口水了', 'nice', '此女易孕', '怎么能娶你', '家妻献丑了~'
                 , '家妻卖艺…不要其他想法啊', '姐姐 我饿了', '我有三百万能娶你吗', '看着有点费钱啊', '😃😃 能一起玩吗', '😃😃😃', '👍', '👍👍👍', '🤗🤗', '❤️❤️❤️❤️❤️', '🌹', '🌹🌹', '🌹🌹🌹🌹', ' 我流鼻血了 👩👩', '👟👟', '🧢🧢🧢🧢', '💋', '💋💋💋',
-                'bravissimi 🥰💯❤️', 'Solo per guardare 👀 mi sono stancata 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣', '不能再看了 我的缓缓'
+                'bravissimi 🥰💯❤️', 'Solo per guardare 👀 mi sono stancata 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣', '不能再看了 我的缓缓', 'Лекси, ты в курсе что мы учились в одной школе?', 'Oh, I thought you were mix half fine half mine', 'Посмотри мотик с ака моего', 'Мне 23, а тебе?'
+                , 'Ну ты мне нравилась', 'cau', 'Ну вот так', 'You havent followed me yet🥺', 'slipknot season ticket holder looking cute 💅', 'ciao bella', ' low poh', 'smoke bc of anxiety ngl shiii is ahh', 'you hop My boyfriend', 'ahh ok', 'hello baby', 'Yeah I know fr', 'Come on baby',
+                ' baby love you 😘😘', ' So what’s your name if you don’t mind me asking don’t even know what to call you 😂', 'hey send me message', '👋👋👋❤️', 'me voy ah dormir', 'That’s what’s up my names Ethan but go by E frfr', 'aver', 'Check', 'asi', 'dal', 'sss', 'Was bouta hop on 2k frfr been at work all night',
+                'eres de china ?', 'Give me your attention', 'let s play together', 'Hit me up 🤷‍♂️😊', 'Wow, Im surprised', '@Menace Web', 'keep ot with kids', 'where u from', 'Tu peux m’VR B', 'how u doin', 'fallen gleich raus', 'U smoke?', 'Oh, I thought you were mix half fine half mine', 'you remind me of a friend I met playing roblox',
+                'keep it with kids', ' why you naked', 'Dripping prenut', 'do you have pain', ' let me join', ' Because you just fell from heaven', 'you are a 9/10', 'Because I am the one you miss', ' i love you mamy', ' I give up', 'my ex cheated on me', '💋💋💋💋💋💋💋zangi please '
+                , 'you both look beautiful 😶‍🌫️', 'What do your socks smell like at the end of the day ?', 'mesadzo majne zangi', 'yo'
             ];
+
+
+
 
 
             setInterval(function () {
@@ -1629,6 +1638,12 @@
     <script>
         function liveck() {
             location.href = "live.html";
+        }
+    </script>
+
+    <script>
+        function livebibo() {
+            location.href = "bigo.html";
         }
     </script>
 
